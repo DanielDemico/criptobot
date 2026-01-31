@@ -34,12 +34,12 @@ def RSI_CALCULATOR(fechamentos: list[float], periodo: int = 14) -> list[float]:
     
     rsi = 100 - (100 / (1 + rs))
     
-    rsi = rsi.fillna(50) 
+    rsi = rsi.fillna(100) 
 
     return rsi.to_list()
 
 
-def SHOW(candles, ema_curta, ema_longa, golden_cross, death_cross):
+def SHOW(candles, ema_curta, ema_longa, golden_cross, death_cross, compras, vendas):
     import matplotlib.pyplot as plt
 
     periodo = range(len(candles)) 
@@ -54,6 +54,12 @@ def SHOW(candles, ema_curta, ema_longa, golden_cross, death_cross):
 
     plt.plot(periodo, candles, label='Preço', color='gray', 
     alpha=0.5, markevery=death_cross, marker="o", markerfacecolor='gray', markeredgecolor='black')
+
+    plt.plot(periodo, candles, label='COMPRA', color='gray', 
+    alpha=0.9, markevery=compras, marker="o", markerfacecolor='green', markeredgecolor='green')
+
+    plt.plot(periodo, candles, label='VENDA', color='gray', 
+    alpha=0.9, markevery=vendas, marker="o", markerfacecolor='red', markeredgecolor='red')
     
     plt.plot(periodo, ema_curta, label='EMA 9 (Rápida)', color='blue')
     plt.plot(periodo, ema_longa, label='EMA 21 (Lenta)', color='red')

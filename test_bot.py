@@ -6,7 +6,7 @@ import pprint
 import calcules
 
 symbol = "BTC-BRL"
-countback = 40000
+countback = 4000
 resolution = "15m"
 current_timestamp=int(time.time())
 
@@ -19,12 +19,17 @@ candles = dados.json()
 
 fechamentos = [float(i) for i in candles['c']]
 
+altos = [float(i) for i in candles['h']]
+
+baixos = [float(i) for i in candles['l']]
+
 
 
 ema_curta = calcules.EMA_CALCULATOR(fechamentos, 9)
 ema_longa = calcules.EMA_CALCULATOR(fechamentos, 21)
 ema_200 = calcules.EMA_CALCULATOR(fechamentos, 200)
 rsi = calcules.RSI_CALCULATOR(fechamentos, 14)
+adx_indicator = calcules.ADX_CALCULATOR(baixos, altos, fechamentos, 14)
 
 golden_crusades, death_crusades = calcules.SIGNALS(ema_curta, ema_longa)
 
@@ -34,12 +39,15 @@ vendas = [False] * countback
 
 id_compra, id_venda = [],[]
 actual_state = None
+
+
 for i in range(len(fechamentos)):
     sinal_compra = golden_crusades[i]
     sinal_venda = death_crusades[i]
     rsi_atual = rsi[i]
     actual_price = fechamentos[i]
-
+    adx_atual = adx_indicator[i]
+    distancia_media = (actual_price / ema_curta[-i]) - 1
 
     if actual_state == "HOLD":
         print("Percentual de ganho: ", (fechamentos[i] / fechamentos[id_compra[-1]] - 1))
@@ -50,18 +58,22 @@ for i in range(len(fechamentos)):
             print(f"STOP LOSS ATINGIDO: Saída a {fechamentos[i]} (Perda de {(fechamentos[i] / fechamentos[id_compra[-1]] - 1)*100:.2f}%)")
 
         elif (fechamentos[i] / fechamentos[id_compra[-1]] - 1) >= ganho_min:
-            if sinal_venda or actual_price < ema_200[i]:
-                    actual_state = "SOLD"
-                    vendas[i] = True
-                    id_venda.append(i)
-                    print(f"VENDA EXECUTADA: {'Morte' if sinal_venda else 'Quebra de Tendência (EMA 200)'}")
+                actual_state = "SOLD"
+                vendas[i] = True
+                id_venda.append(i)
+                print(f"VENDA EXECUTADA: {'Morte' if sinal_venda else 'Quebra de Tendência (EMA 200)'}")
 
 
     elif sinal_compra:
-        if actual_price < ema_200[i]:
+        
+        if adx_atual < 25:
+            print(f"STATUS: Lateralizado (ADX: {adx_atual:.2f}). Operação bloqueada.")
+        elif actual_price < ema_200[i]:
             print("Não Compra, tendencia baixa EMA 200")
         elif rsi_atual > 80:
             print(f"IGNORADO: RSI muito alto ({rsi_atual:.0f}). Risco de topo.")
+        elif distancia_media > 0.015:
+            print(f"IGNORADO: Preço muito esticado ({distancia_media*100:.2f}% acima da EMA9).")
         else:
             if actual_state != "HOLD":
                 actual_state = "HOLD"

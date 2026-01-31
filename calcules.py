@@ -20,6 +20,24 @@ def SIGNALS(ema_curta, ema_longa):
   
     return golden_cross, death_cross
 
+def RSI_CALCULATOR(fechamentos: list[float], periodo: int = 14) -> list[float]:
+    series_precos = pd.Series(fechamentos)
+    delta = series_precos.diff()
+
+    ganhos = delta.where(delta > 0, 0.0)
+    perdas = -delta.where(delta < 0, 0.0)
+
+    media_ganhos = ganhos.ewm(alpha=1/periodo, min_periods=periodo, adjust=False).mean()
+    media_perdas = perdas.ewm(alpha=1/periodo, min_periods=periodo, adjust=False).mean()
+
+    rs = media_ganhos / media_perdas
+    
+    rsi = 100 - (100 / (1 + rs))
+    
+    rsi = rsi.fillna(50) 
+
+    return rsi.to_list()
+
 
 def SHOW(candles, ema_curta, ema_longa, golden_cross, death_cross):
     import matplotlib.pyplot as plt
